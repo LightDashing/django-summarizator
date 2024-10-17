@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Papers by Subject - ArXiv Paper Summarizer</title>
+    <style>
+        /* Same base styling as previous pages */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        .navbar {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .navbar ul {
+            list-style-type: none;
+            display: flex;
+        }
+
+        .navbar ul li {
+            margin-right: 20px;
+        }
+
+        .navbar ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+        }
+
+        .navbar ul li a:hover {
+            background-color: #555;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .selector-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        select, input[type="checkbox"] {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .papers-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .paper {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 30%;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .paper h2 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .paper p {
+            color: #666;
+        }
+
+        .paper a {
+            display: inline-block;
+            text-decoration: none;
+            color: #007BFF;
+            margin-top: 10px;
+        }
+
+        .paper a:hover {
+            text-decoration: underline;
+        }
+
+        .score {
+            font-weight: bold;
+            color: #007BFF;
+        }
+
+        .plus-button {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .plus-button:hover {
+            background-color: #218838;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #333;
+            color: white;
+            margin-top: 20px;
+        }
+    </style>
+
+    <script>
+        function fetchCategories(subjectName) {
+            // Fetch the categories that belong to the selected subject
+            fetch(`/fetch_categories/?subject_name=${subjectName}`, {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                const categorySelector = document.getElementById('category-selector');
+                categorySelector.innerHTML = '<option value="all">All Categories</option>'; // Reset the category list
+                
+                // Populate the category selector with categories related to the selected subject
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.name;  // Category name is used as value
+                    option.textContent = category.name;
+                    categorySelector.appendChild(option);
+                });
+
+                // After updating categories, fetch the papers with the new category list
+                fetchPapers();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function fetchPapers() {
+            const subjectName = document.getElementById('subject-selector').value;
+            const categoryName = document.getElementById('category-selector').value;
+            const sortByVotes = document.getElementById('vote-sort').checked;
+
+            fetch(`/fetch_papers/?subject_name=${subjectName}&category_name=${categoryName}&sort_by_votes=${sortByVotes}`, {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                const papersList = document.getElementById('papers-list');
+                papersList.innerHTML = ''; // Clear the paper list
+
+                // Populate the papers dynamically
+                data.papers.forEach(paper => {
+                    const paperElement = document.createElement('div');
+                    paperElement.classList.add('paper');
+                    paperElement.innerHTML = `
+                        <h2>${paper.title}</h2>
+                        <p>${paper.abstract.slice(0, 200)}...</p>
+                        <p>Score: <span class="score" id="score-${paper.id}">${paper.score}</span></p>
+                        <button class="plus-button" onclick="increaseScore(${paper.id})">+ Vote</button>
+                        <a href="${paper.url}">Read more</a>
+                    `;
+                    papersList.appendChild(paperElement);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function increaseScore(paperId) {
+            fetch(`/increase_score/${paperId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const scoreElement = document.getElementById(`score-${paperId}`);
+                    scoreElement.textContent = data.new_score;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        window.onload = function() {
+            document.getElementById('subject-selector').onchange = function() {
+                fetchCategories(this.value);
+            };
+            document.getElementById('category-selector').onchange = fetchPapers;
+            document.getElementById('vote-sort').onchange = fetchPapers;
+            fetchPapers(); // Fetch papers initially on page load
+        };
+        </script>
+    </head>
+<body>
+    <!-- Navigation menu -->
+    <div class="navbar">
+        <ul>
+            <li><a href="{% url 'index' %}">Home</a></li>
+            <li><a href="{% url 'fresh' %}">Fresh Papers</a></li>
+            <li><a href="{% url 'subject' %}">By Subject</a></li>
+            <li><a href="{% url 'search' %}">Search</a></li>
+        </ul>
+    </div>
+
+    <!-- Main content -->
+    <div class="container">
+        <h1>Papers by Subject</h1>
+
+        <!-- Filters -->
+        <div class="selector-container">
+            <div>
+                <label for="subject-selector">Select Subject:</label>
+                <select id="subject-selector">
+                    {% for subject in subjects %}
+                    <option value="{{ subject.name }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="category-selector">Select Category:</label>
+                <select id="category-selector">
+                    <option value="all">All Categories</option>
+                    <!-- Categories will be dynamically populated based on the selected subject -->
+                </select>
+            </div>
+
+            <div>
+                <label for="vote-sort">Sort by Votes:</label>
+                <input type="checkbox" id="vote-sort">
+            </div>
+        </div>
+        
+        <!-- Papers list -->
+        <div class="papers-list" id="papers-list">
+            <!-- Papers will be loaded dynamically via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>ArXiv Paper Summarizer - Django Project</p>
+    </footer>
+</body>
+</html>

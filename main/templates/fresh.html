@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fresh Papers - ArXiv Paper Summarizer</title>
+    <style>
+        /* Basic reset and styling (same as before) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        .navbar {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .navbar ul {
+            list-style-type: none;
+            display: flex;
+        }
+
+        .navbar ul li {
+            margin-right: 20px;
+        }
+
+        .navbar ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+        }
+
+        .navbar ul li a:hover {
+            background-color: #555;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .papers-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .paper {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 30%;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .paper h2 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .paper p {
+            color: #666;
+        }
+
+        .paper a {
+            display: inline-block;
+            text-decoration: none;
+            color: #007BFF;
+            margin-top: 10px;
+        }
+
+        .paper a:hover {
+            text-decoration: underline;
+        }
+
+        .score {
+            font-weight: bold;
+            color: #007BFF;
+        }
+
+        .plus-button {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .plus-button:hover {
+            background-color: #218838;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #333;
+            color: white;
+            margin-top: 20px;
+        }
+    </style>
+
+    <script>
+        function increaseScore(paperId) {
+            fetch(`/increase_score/${paperId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const scoreElement = document.getElementById(`score-${paperId}`);
+                    scoreElement.textContent = data.new_score;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <!-- Navigation menu -->
+    <div class="navbar">
+        <ul>
+            <li><a href="{% url 'index' %}">Home</a></li>
+            <li><a href="{% url 'fresh' %}">Fresh Papers</a></li>
+            <li><a href="{% url 'subject' %}">By Subject</a></li>
+            <li><a href="{% url 'search' %}">Search</a></li>
+        </ul>
+    </div>
+
+    <!-- Main content -->
+    <div class="container">
+        <h1>Fresh Papers</h1>
+        <div class="papers-list">
+            {% for paper in papers %}
+            <div class="paper">
+                <h2><a href="{% url 'paper_detail' paper.id %}">{{ paper.title }}</a></h2>
+                <p>{{ paper.abstract|slice:":200" }}...</p>
+                <p>Score: <span class="score" id="score-{{ paper.id }}">{{ paper.score }}</span></p>
+                <button class="plus-button" onclick="increaseScore({{ paper.id }})">+ Vote</button>
+                <a href="{{ paper.url }}">Read more</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>ArXiv Paper Summarizer - Django Project</p>
+    </footer>
+</body>
+</html>
