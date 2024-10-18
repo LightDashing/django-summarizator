@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Papers</title>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .papers-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .paper {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .paper h2 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .paper p {
+            color: #666;
+        }
+
+        a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .navbar {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .navbar ul {
+            list-style-type: none;
+            display: flex;
+        }
+
+        .navbar ul li {
+            margin-right: 20px;
+        }
+
+        .navbar ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+        }
+
+        .navbar ul li a:hover {
+            background-color: #555;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #333;
+            color: white;
+            margin-top: 20px;
+        }
+
+    </style>
+
+    <script>
+        let searchTimeout = null;
+
+        function searchPapers(query) {
+            if (!query) {
+                document.getElementById('papers-list').innerHTML = ''; // Clear results if no query
+                return;
+            }
+
+            fetch(`/search_papers/?query=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                const papersList = document.getElementById('papers-list');
+                papersList.innerHTML = ''; // Clear previous results
+
+                data.papers.forEach(paper => {
+                    const paperElement = document.createElement('div');
+                    paperElement.classList.add('paper');
+                    paperElement.innerHTML = `
+                        <h2><a href="/paper/${paper.id}/">${paper.title}</a></h2>
+                        <p>${paper.abstract.slice(0, 200)}...</p>
+                        <p>Score: ${paper.score}</p>
+                    `;
+                    papersList.appendChild(paperElement);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function handleInput(event) {
+            clearTimeout(searchTimeout); // Clear the previous timeout
+            const query = event.target.value;
+
+            // Set a delay of 500ms before sending the search request
+            searchTimeout = setTimeout(() => {
+                searchPapers(query);
+            }, 500);
+        }
+
+        window.onload = function() {
+            document.getElementById('search-input').addEventListener('input', handleInput);
+        };
+    </script>
+</head>
+<body>
+        <!-- Navigation menu -->
+        <div class="navbar">
+            <ul>
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'fresh' %}">Fresh Papers</a></li>
+                <li><a href="{% url 'subject' %}">By Subject</a></li>
+                <li><a href="{% url 'search' %}">Search</a></li>
+            </ul>
+        </div>
+    <div class="container">
+        <h1>Search Papers</h1>
+        <input type="text" id="search-input" placeholder="Type to search papers...">
+        <div class="papers-list" id="papers-list">
+            <!-- Search results will be displayed here -->
+        </div>
+    </div>
+    <footer>
+        <p>ArXiv Paper Summarizer - Django Project</p>
+    </footer>
+</body>
+</html>

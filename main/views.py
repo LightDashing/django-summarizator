@@ -81,3 +81,19 @@ def fetch_categories(request):
 
     categories_data = [{'name': category.name} for category in categories]
     return JsonResponse({'categories': categories_data})
+
+def search_papers(request):
+    query = request.GET.get('query', '')
+    if query:
+        papers = Paper.objects.filter(title__icontains=query) | Paper.objects.filter(abstract__icontains=query)
+    else:
+        papers = Paper.objects.none()
+
+    papers_data = [{
+        'id': paper.id,
+        'title': paper.title,
+        'abstract': paper.abstract,
+        'score': paper.score
+    } for paper in papers]
+
+    return JsonResponse({'papers': papers_data})

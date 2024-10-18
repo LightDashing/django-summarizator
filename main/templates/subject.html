@@ -171,13 +171,13 @@
                     const paperElement = document.createElement('div');
                     paperElement.classList.add('paper');
                     paperElement.innerHTML = `
-                        <h2>${paper.title}</h2>
-                        <p>${paper.abstract.slice(0, 200)}...</p>
-                        <p>Score: <span class="score" id="score-${paper.id}">${paper.score}</span></p>
-                        <button class="plus-button" onclick="increaseScore(${paper.id})">+ Vote</button>
-                        <a href="${paper.url}">Read more</a>
-                    `;
-                    papersList.appendChild(paperElement);
+                    <h2><a href="/paper/${paper.id}/">${paper.title}</a></h2>
+                    <p>${paper.abstract.slice(0, 200)}...</p>
+                    <p>Score: <span class="score" id="score-${paper.id}">${paper.score}</span></p>
+                    <button class="plus-button" onclick="increaseScore(${paper.id})">+ Vote</button>
+                    <a href="${paper.url}">Read more</a>
+                `;
+                papersList.appendChild(paperElement);
                 });
             })
             .catch(error => console.error('Error:', error));
